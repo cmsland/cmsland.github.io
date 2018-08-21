@@ -21,12 +21,13 @@ var featureDlgs = { shoppingList: 'shopList.root'};
 
 // Receive messages from the user and respond by echoing each message back (prefixed with 'You said:')
 var bot = new builder.UniversalBot(connector, function (session) {
-    //session.send("Deng said: %s", session.message.text);
-    shoppingList(builder, bot, featureDlgs.shoppingList);
+    //session.send("Deng said: %s", session.message.text);   
     session.beginDialog(featureDlgs.shoppingList);
 });
 
 bot.set('storage', new builder.MemoryBotStorage());
+
+shoppingList(builder, bot, featureDlgs.shoppingList);
 
 var luisAppId = process.env.LuisAppId;
 var luisAPIKey = process.env.LuisAPIKey;
