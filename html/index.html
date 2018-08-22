@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!-- 
+-->
+<html>
+
+<head>
+	<meta charset="UTF-8" />
+	<title>Bot Chat</title>
+	<style>
+		td {vertical-align:top;}
+	</style>
+	
+</head>
+
+<body>
+	<!--h3 style="font-family:Segoe UI;">Type words into the WebChat!</h3-->
+	<input id="inputTxt" size=45 onkeyup="inputKeyup(event)" />
+	<button onclick="postButtonMessage()">Send</button>
+	<p>
+	<table id="botDiv" width="99%"></table>
+	<script src="directLine.js"></script>
+	<script>
+		//var params = BotChat.queryParams(location.search);
+
+		var directLine = new DirectLine.DirectLine({
+			secret: '_YU_0_mwEFg.cwA.jhM.kAWLKLLhIxU6IpQkQ-28dEpMYG7RAruhq7whmIPf9Fg',
+			//'sxDun38QzJw.cwA.2GE.ncZVkTE1zjUiESy62sxnw9pMJNXhfDxhURiUYkvHx5A',
+			domain: '',
+			webSocket: true
+		});
+		directLine.activity$.filter(activity => activity.type === 'message')
+		.subscribe(
+			message = (message) => { 
+				console.log("received message ", message);
+				
+				if(isUserInput(message)|| message.text != 'EmptyCart') {
+				  displayText(message);
+				} 
+				else {
+					httpGetAsync('http://localhost:8080/?key=' + message.text, (resp) => { 
+						displayText(message.from.id, resp);
+					});
+				}
+			}
+		);
+		
+		console.log('connected!');
+		
+		const inputKeyup = (event) => {
+			event.preventDefault();
+			if (event.keyCode === 13) postButtonMessage();
+    	}
+		
+		const isUserInput = (message) => {return message.from.id == 'me'};
+		
+		const botImg = "<td><img src='bot.jpeg' alt='chatbot' height='18px' width='17px'>";
+		
+		const displayText = (message) => {
+			var from = botImg, to = '<td/>';
+			var text = message.text.replace(/\n/g, '<br/>');
+			if(isUserInput(message)) {
+				from = '<td/>';
+				to = '<td> -&gt; <b>' + message.from.id + '</b>';
+				text = '<td align=right>' + text;
+			}
+			else {
+				text = '<td align=left>' + text;
+			}
+			document.getElementById("botDiv").innerHTML += '<tr>' + from + text + to;
+		};
+		
+		const postButtonMessage = () => {
+			var txt = document.getElementById('inputTxt');
+			if(txt.value.trim() != '') {	
+				sendText(txt.value);			
+				txt.value = '';
+			}
+			txt.focus();
+		};		
+		
+		const sendText = (txt) => {
+			directLine.postActivity({
+				from: { id: 'me', name: 'myUserName' },
+				type: 'message',
+				text: txt
+			}).subscribe();
+		};
+		
+		
+		const httpGetAsync = (theUrl, callback) => {
+			var xmlHttp = new XMLHttpRequest();
+			xmlHttp.onreadystatechange = function() { 
+				if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+					callback(xmlHttp.responseText);
+			}
+			xmlHttp.open("GET", theUrl, true); 
+			xmlHttp.send(null);
+		}
+		postButtonMessage();
+	</script>
+</body>
+
+</html>
