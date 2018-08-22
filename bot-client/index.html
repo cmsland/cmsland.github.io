@@ -48,7 +48,16 @@
 		.subscribe(
 			activity => {
 				console.log("received event ", activity);
-				if (activity.name == 'listCreating') sendText('', 'event', 'listCreated', activity.value);
+				if (activity.name == 'listCreating') {
+					var listObj = JSON.parse(activity.value);
+					var theUrl = 'http://localhost:8080/?key=create&name=' + listObj.name + '&items=';
+					theUrl += listObj.items.join();
+					console.log(theUrl);
+					httpGetAsync(theUrl, (resp) => {
+						console.log(resp);
+						sendText('', 'event', 'listCreated', '"' + listObj.name + '"is created!');
+					});
+				}
 			}
 		);
 		
