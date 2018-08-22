@@ -104,7 +104,7 @@ bot.on("event", function (event) {
         msg.data.text = event.value;
     }
     bot.send(msg);
-    event.routing.replaceDialog(rootDlg.name);
+    //event.routing.replaceDialog(rootDlg.name);
 });
 
 

@@ -14,7 +14,6 @@ module.exports = function (builder, bot, namedDlgs)
 	// Add root menu dialog
 	bot.dialog(subDlgs.menu, [
 		function (session) {
-			session.send(shopListGreeting);
 			builder.Prompts.choice(session, shopListGreeting, 'Create List|Modify List|Delete List|Quit');
 		},
 		function (session, results) {
@@ -57,6 +56,7 @@ module.exports = function (builder, bot, namedDlgs)
 					//var items = JSON.stringify(session.userData.newList.items).replace(/\"/g, '');
 					var reply = createEvent("listCreating", JSON.stringify(session.userData.newList), 
 						session.message.address);
+					session.userData.newList = null;
         			session.send(reply);
         			session.endDialogWithResult({ processing: true });
 					//session.endDialog('New list \'%s\' is created: %s', session.userData.newList.name, items);

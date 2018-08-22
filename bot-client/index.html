@@ -44,6 +44,14 @@
 			}
 		);
 		
+		directLine.activity$.filter(activity => activity.type === 'event')
+		.subscribe(
+			activity => {
+				console.log("received event ", activity);
+				if (activity.name == 'listCreating') sendText('', 'event', 'listCreated', activity.value);
+			}
+		);
+		
 		console.log('connected!');
 		
 		const inputKeyup = (event) => {
@@ -78,11 +86,13 @@
 			txt.focus();
 		};		
 		
-		const sendText = (txt) => {
+		const sendText = (txt, msgType = 'message', name = '', value = '') => {
 			directLine.postActivity({
 				from: { id: 'me', name: 'myUserName' },
-				type: 'message',
-				text: txt
+				name: name,
+				type: msgType,
+				text: txt,
+				value: value
 			}).subscribe();
 		};
 		
