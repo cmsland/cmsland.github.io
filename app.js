@@ -33,7 +33,6 @@ var bot = new builder.UniversalBot(connector, function (session) {
 bot.set('storage', new builder.MemoryBotStorage());
 
 bot.dialog('firstRun', function (session) {
-console.log(session.userData.firstRun);
     session.userData.firstRun = true;
     session.endDialog(greetings);
     session.beginDialog(rootDlg.name);
