@@ -1,14 +1,21 @@
-var subDlgs = { create: 'shopList.create', modify: '', del: '' };
-var actions = { cancelCreate: 'action.shopList.cancelCreate'}
-var shopListGreeting = "Hello... I'm the Shopping List ChatBot.";
+const actions = { cancelCreate: 'action.shopList.cancelCreate'}
+const shopListGreeting = "Choose an option to manage your Shopping list:";
 
-module.exports = function (builder, bot, rootDlg) 
+module.exports = function (builder, bot, namedDlgs) 
 {
+	const subDlgs = namedDlgs.shoppingList;
+	const createEvent = (eventName, value, address) => {
+		var msg = new builder.Message().address(address);
+		msg.data.type = "event";
+		msg.data.name = eventName;
+		msg.data.value = value;
+		return msg;
+	}
 	// Add root menu dialog
-	bot.dialog(rootDlg, [
+	bot.dialog(subDlgs.menu, [
 		function (session) {
 			session.send(shopListGreeting);
-			builder.Prompts.choice(session, "Choose an option:", 'Create List|Modify List|Delete List|Quit');
+			builder.Prompts.choice(session, shopListGreeting, 'Create List|Modify List|Delete List|Quit');
 		},
 		function (session, results) {
 			switch (results.response.index) {
@@ -26,28 +33,45 @@ module.exports = function (builder, bot, rootDlg)
 					break;
 			}
 		},
-		function (session) {
+		function (session, results) {
+			if (results && results.processing) return;
 			// Reload menu
-			session.replaceDialog(rootDlg);
+			session.replaceDialog(namedDlgs.rootMenu);
 		}
-	]).reloadAction(rootDlg, null, { matches: /^(shopping list|shop list)/i });
+	]);
 
 	bot.dialog(subDlgs.create, [
-		function (session) {
-			builder.Prompts.text(session, "What's the new Shopping List name?");
+		function (session, args, next) {
+			var prompt = "What's the new Shopping List name?";
+			if (args) {
+				if (args.lastItem) prompt = '[' + args.lastItem + '] added to list.'
+				else prompt = 'Please input the items(\'done\' for ending input): '
+			}
+			builder.Prompts.text(session, prompt);
 		},
 		function (session, results) {
-			session.send('New Shopping List: \'%s\' is created, please input the items: (\'done\' for ending input.)', results.response);
-		},
-		function (session, results) {
-			for(var i=0; i<10; i++) builder.Prompts.text(session);
+			var item = '';
+			if (session.userData.newList) {
+				item = results.response;
+				if (item.match(/done/i)) {
+					//var items = JSON.stringify(session.userData.newList.items).replace(/\"/g, '');
+					var reply = createEvent("listCreating", JSON.stringify(session.userData.newList), 
+						session.message.address);
+        			session.send(reply);
+        			session.endDialogWithResult({ processing: true });
+					//session.endDialog('New list \'%s\' is created: %s', session.userData.newList.name, items);
+					return;
+				}
+				session.userData.newList.items.push(item);
+			}
+			else {
+				session.userData.newList = {name: results.response, items: []};
+			}
+			session.replaceDialog(subDlgs.create, { lastItem: item });
 		}
 	])
-	.cancelAction(actions.cancelCreate, 'Ok, complete the creation.', {
-		matches: /done/i
-	})
-	.cancelAction(actions.cancelCreate, 'Ok, cancel the creation.', {
-		matches: 'Cancel'
+	.cancelAction(actions.cancelCreate, 'Ok, cancel the list creation.', {
+		matches: /cancel/i
 	});
 		
 		

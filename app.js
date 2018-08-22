@@ -1,6 +1,6 @@
 var restify = require('restify');
 var builder = require('botbuilder');
-var shoppingList = require('./shopping-list');
+var rootDlg = require('./root');
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -17,17 +17,39 @@ var connector = new builder.ChatConnector({
 // Listen for messages from users 
 server.post('/api/messages', connector.listen());
 
-var featureDlgs = { shoppingList: 'shopList.root'};
+//var featureDlgs = { shoppingList: 'shopList.root'};
 
-// Receive messages from the user and respond by echoing each message back (prefixed with 'You said:')
+const greetings = "Hey, this is your shopping assistant.";
+
 var bot = new builder.UniversalBot(connector, function (session) {
-    //session.send("Deng said: %s", session.message.text);   
-    session.beginDialog(featureDlgs.shoppingList);
+	if(session.message.text.match(/^hi$/i)) {
+		session.beginDialog(rootDlg.name);
+	} else {
+    	session.send("Robot said: %s", session.message.text);
+    }
+    //session.beginDialog(featureDlgs.shoppingList);
 });
 
 bot.set('storage', new builder.MemoryBotStorage());
 
-shoppingList(builder, bot, featureDlgs.shoppingList);
+bot.dialog('firstRun', function (session) {
+console.log(session.userData.firstRun);
+    session.userData.firstRun = true;
+    session.endDialog(greetings);
+    session.beginDialog(rootDlg.name);
+}).triggerAction({
+    onFindAction: function (context, callback) {
+        // Only trigger if we've never seen user before
+        if (!context.userData.firstRun) {
+            // Return a score of 1.1 to ensure the first run dialog wins
+            callback(null, 1.1);
+        } else {
+            callback(null, 0.0);
+        }
+    }
+});
+
+rootDlg.bind(builder, bot);
 
 var luisAppId = process.env.LuisAppId;
 var luisAPIKey = process.env.LuisAPIKey;
@@ -75,5 +97,14 @@ bot.dialog('EmptyCartDialog',
     matches: 'EmptyCart'
 });
 
+bot.on("event", function (event) {
+    var msg = new builder.Message().address(event.address);
+    msg.data.textLocale = "en-us";
+    if (event.name === "listCreated") {
+        msg.data.text = event.value;
+    }
+    bot.send(msg);
+    event.routing.replaceDialog(rootDlg.name);
+});
 
 
